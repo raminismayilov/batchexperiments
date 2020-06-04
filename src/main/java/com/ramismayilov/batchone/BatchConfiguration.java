@@ -20,7 +20,7 @@ import org.springframework.batch.repeat.RepeatStatus;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.io.ClassPathResource;
-import org.springframework.oxm.Unmarshaller;
+import org.springframework.core.io.FileSystemResource;
 import org.springframework.oxm.jaxb.Jaxb2Marshaller;
 
 import javax.sql.DataSource;
@@ -50,11 +50,13 @@ public class BatchConfiguration {
     public StaxEventItemReader<Person> personXmlReader() {
         return new StaxEventItemReaderBuilder<Person>()
                 .name("personItemReaderXML")
-                .resource(new ClassPathResource("sample-xml-data.xml"))
+                .resource(new FileSystemResource("/home/ramin/code/somewhere/sample-xml-data-somewhere.xml"))
                 .addFragmentRootElements("person")
                 .unmarshaller(personMarshaller())
                 .build();
     }
+
+    
 
     @Bean
     public Jaxb2Marshaller personMarshaller() {

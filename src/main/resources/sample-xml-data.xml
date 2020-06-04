@@ -7,6 +7,10 @@
         <firstName>John</firstName>
         <lastName>Locke</lastName>
     </person>
+    <something>
+        <whatever>Hugo</whatever>
+        <whateverElse>Reyes</whateverElse>
+    </something>
     <person>
         <firstName>Desmond</firstName>
         <lastName>Hume</lastName>
@@ -14,5 +18,9 @@
     <person>
         <firstName>Kate</firstName>
         <lastName>Austen</lastName>
+    </person>
+    <person>
+        <firstName>James</firstName>
+        <lastName>Ford</lastName>
     </person>
 </people>
