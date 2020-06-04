@@ -14,10 +14,14 @@ import org.springframework.batch.item.database.builder.JdbcBatchItemWriterBuilde
 import org.springframework.batch.item.file.FlatFileItemReader;
 import org.springframework.batch.item.file.builder.FlatFileItemReaderBuilder;
 import org.springframework.batch.item.file.mapping.BeanWrapperFieldSetMapper;
+import org.springframework.batch.item.xml.StaxEventItemReader;
+import org.springframework.batch.item.xml.builder.StaxEventItemReaderBuilder;
 import org.springframework.batch.repeat.RepeatStatus;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.io.ClassPathResource;
+import org.springframework.oxm.Unmarshaller;
+import org.springframework.oxm.jaxb.Jaxb2Marshaller;
 
 import javax.sql.DataSource;
 
@@ -26,6 +30,7 @@ import javax.sql.DataSource;
 @EnableBatchProcessing
 @AllArgsConstructor
 public class BatchConfiguration {
+
     public JobBuilderFactory jobBuilderFactory;
     public StepBuilderFactory stepBuilderFactory;
 
@@ -33,12 +38,29 @@ public class BatchConfiguration {
     public FlatFileItemReader<Person> reader() {
         return new FlatFileItemReaderBuilder<Person>()
                 .name("personItemReaderCSV")
-                .resource(new ClassPathResource("sample-data.csv"))
+                .resource(new ClassPathResource("sample-csv-data.csv"))
                 .delimited()
                 .names("firstName", "lastName")
                 .fieldSetMapper(new BeanWrapperFieldSetMapper<Person>() {{
                     setTargetType(Person.class);
                 }}).build();
+    }
+
+    @Bean
+    public StaxEventItemReader<Person> personXmlReader() {
+        return new StaxEventItemReaderBuilder<Person>()
+                .name("personItemReaderXML")
+                .resource(new ClassPathResource("sample-xml-data.xml"))
+                .addFragmentRootElements("person")
+                .unmarshaller(personMarshaller())
+                .build();
+    }
+
+    @Bean
+    public Jaxb2Marshaller personMarshaller() {
+        Jaxb2Marshaller jaxb2Marshaller = new Jaxb2Marshaller();
+        jaxb2Marshaller.setClassesToBeBound(Person.class);
+        return jaxb2Marshaller;
     }
 
     @Bean
@@ -56,13 +78,12 @@ public class BatchConfiguration {
     }
 
     @Bean
-    public Job importUserJob(JobCompletionNotificationListener listener, Step step0, Step step1) {
-        return jobBuilderFactory.get("importUserJob")
-                .incrementer(new RunIdIncrementer())
-                .listener(listener)
-                .start(step0)
-                .next(step1)
-                .build();
+    public Step step0() {
+        return stepBuilderFactory.get("step0")
+                .tasklet((contrib, ctx) -> {
+                    log.info("Hello, World!");
+                    return RepeatStatus.FINISHED;
+                }).build();
     }
 
     @Bean
@@ -76,11 +97,22 @@ public class BatchConfiguration {
     }
 
     @Bean
-    public Step step0() {
-        return stepBuilderFactory.get("step0")
-                .tasklet((contrib, ctx) -> {
-                    log.info("Hello, World!");
-                    return RepeatStatus.FINISHED;
-                }).build();
+    public Step step2(JdbcBatchItemWriter<Person> writer) {
+        return stepBuilderFactory.get("step2")
+                .<Person, Person> chunk(10)
+                .reader(personXmlReader())
+                .writer(writer)
+                .build();
+    }
+
+    @Bean
+    public Job importUserJob(JobCompletionNotificationListener listener, Step step0, Step step1, Step step2) {
+        return jobBuilderFactory.get("importUserJob")
+                .incrementer(new RunIdIncrementer())
+                .listener(listener)
+                .start(step0)
+                .next(step1)
+                .next(step2)
+                .build();
     }
 }

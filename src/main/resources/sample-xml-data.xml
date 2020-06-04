@@ -1,0 +1,18 @@
+<people>
+    <person>
+        <firstName>Jack</firstName>
+        <lastName>Shepherd</lastName>
+    </person>
+    <person>
+        <firstName>John</firstName>
+        <lastName>Locke</lastName>
+    </person>
+    <person>
+        <firstName>Desmond</firstName>
+        <lastName>Hume</lastName>
+    </person>
+    <person>
+        <firstName>Kate</firstName>
+        <lastName>Austen</lastName>
+    </person>
+</people>
