@@ -7,6 +7,7 @@ import org.springframework.batch.core.Step;
 import org.springframework.batch.core.configuration.annotation.EnableBatchProcessing;
 import org.springframework.batch.core.configuration.annotation.JobBuilderFactory;
 import org.springframework.batch.core.configuration.annotation.StepBuilderFactory;
+import org.springframework.batch.core.configuration.annotation.StepScope;
 import org.springframework.batch.core.launch.support.RunIdIncrementer;
 import org.springframework.batch.item.database.BeanPropertyItemSqlParameterSourceProvider;
 import org.springframework.batch.item.database.JdbcBatchItemWriter;
@@ -14,9 +15,11 @@ import org.springframework.batch.item.database.builder.JdbcBatchItemWriterBuilde
 import org.springframework.batch.item.file.FlatFileItemReader;
 import org.springframework.batch.item.file.builder.FlatFileItemReaderBuilder;
 import org.springframework.batch.item.file.mapping.BeanWrapperFieldSetMapper;
+import org.springframework.batch.item.file.mapping.PassThroughLineMapper;
 import org.springframework.batch.item.xml.StaxEventItemReader;
 import org.springframework.batch.item.xml.builder.StaxEventItemReaderBuilder;
 import org.springframework.batch.repeat.RepeatStatus;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.io.ClassPathResource;
@@ -55,8 +58,6 @@ public class BatchConfiguration {
                 .unmarshaller(personMarshaller())
                 .build();
     }
-
-    
 
     @Bean
     public Jaxb2Marshaller personMarshaller() {
@@ -116,5 +117,33 @@ public class BatchConfiguration {
                 .next(step1)
                 .next(step2)
                 .build();
+    }
+
+    @Bean
+    Step sampleStep() {
+        return stepBuilderFactory.get("sampleStep")
+                .<String, String>chunk(5)
+                .reader(itemReader(null))
+                .writer(i -> i.stream().forEach(System.out::println))
+                .build();
+    }
+
+    @Bean
+    Job sampleJob() {
+        Job job = jobBuilderFactory.get("sampleJob")
+                .incrementer(new RunIdIncrementer())
+                .start(sampleStep())
+                .build();
+        return job;
+    }
+
+    @Bean
+    @StepScope
+    FlatFileItemReader<String> itemReader(@Value("#{jobParameters[file_path]}") String filePath) {
+        FlatFileItemReader<String> reader = new FlatFileItemReader<String>();
+        final FileSystemResource fileResource = new FileSystemResource(filePath);
+        reader.setResource(fileResource);
+        reader.setLineMapper(new PassThroughLineMapper());
+        return reader;
     }
 }
